@@ -14,6 +14,10 @@ RUN apt-get update && apt-get install -y \
 RUN git clone https://github.com/DobleL2/ELECCIONES_2024.git .
 
 RUN pip3 install -r requirements.txt
+RUN pip install streamlit
+
+RUN which streamlit
+RUN chmod +x $(which streamlit)
 
 EXPOSE 8501
 
