@@ -15,7 +15,7 @@ WORKDIR /app
 
 # Create and activate a virtual environment
 RUN python -m venv venv
-ENV PATH="/app/venv/bin:$PATH"
+ENV PATH="/venv/bin:$PATH"
 
 # Copy the dependencies file to the working directory
 COPY ./app/requirements.txt /app/
