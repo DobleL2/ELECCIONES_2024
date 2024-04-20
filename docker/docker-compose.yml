@@ -3,8 +3,8 @@ version: '3.8'
 services:
   streamlit_app:
     build:
-      context: .
-      dockerfile: docker/Dockerfile
+      context: ./docker
+      dockerfile: Dockerfile
     ports:
       - "8501:8501"
     restart: always
