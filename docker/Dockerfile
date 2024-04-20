@@ -7,8 +7,15 @@ ENV PYTHONUNBUFFERED 1
 
 # Install ODBC library and its dependencies
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends unixodbc unixodbc-dev && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get install -y --no-install-recommends curl apt-transport-https gnupg2 lsb-release && \
+    curl https://packages.microsoft.com/keys/microsoft.asc | apt-key add - && \
+    curl https://packages.microsoft.com/config/ubuntu/20.04/prod.list > /etc/apt/sources.list.d/mssql-release.list && \
+    apt-get update && \
+    ACCEPT_EULA=Y apt-get install -y msodbcsql18 && \
+    ACCEPT_EULA=Y apt-get install -y mssql-tools18 && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    rm /etc/apt/sources.list.d/mssql-release.list
     
 # Set the working directory in the container
 WORKDIR /app

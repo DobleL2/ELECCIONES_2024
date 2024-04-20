@@ -37,10 +37,34 @@ with st.echo(code_location='below'):
       .mark_circle(color='#0068c9', opacity=0.5)
       .encode(x='x:Q', y='y:Q'))
    
+import pyodbc
+import os
+import pandas as pd
+from sqlalchemy import create_engine
+from dotenv import load_dotenv
+from sqlalchemy.orm import sessionmaker
 
-# SQL query
-query = "SELECT * FROM dbo.JUNTA LIMIT 100"
+load_dotenv('.env')
+
+server = os.getenv('SERVER')
+username ='test2' #os.getenv('USER')
+password = os.getenv('PASSWORD')
+driver= os.getenv('DRIVER')
+database = os.getenv('DATABASE')
+
+def connection():
+    conn = pyodbc.connect(f'DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={username};PWD={password}')
+    print("Connection successful!")
+    return conn
+
+def query_function(query):
+    conn = connection()  # Assuming you have the connection function defined elsewhere
+    data = pd.read_sql(query, conn)  # Execute the query and read into DataFrame
+    conn.close()
+    return data
 
 # Execute query
-juntas = connection.query_function(query)
+query = "SELECT TOP 100 * FROM dbo.JUNTA"
+juntas = query_function(query)
+
 st.write(juntas)
