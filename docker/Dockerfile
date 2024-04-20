@@ -7,6 +7,10 @@ WORKDIR /app
 # Copiar los archivos de la aplicación
 COPY ./app /app
 
+# Crear un entorno virtual e instalar dependencias
+RUN python -m venv venv
+ENV PATH="/app/venv/bin:$PATH"
+
 # Instalar dependencias
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
