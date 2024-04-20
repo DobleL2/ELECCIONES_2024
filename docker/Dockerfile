@@ -9,9 +9,13 @@ ENV PYTHONUNBUFFERED 1
 RUN apt-get update && \
     apt-get install -y --no-install-recommends unixodbc unixodbc-dev && \
     rm -rf /var/lib/apt/lists/*
-
+    
 # Set the working directory in the container
 WORKDIR /app
+
+# Create and activate a virtual environment
+RUN python -m venv venv
+ENV PATH="/home/appuser/app/venv/bin:$PATH"
 
 # Copy the dependencies file to the working directory
 COPY ./app/requirements.txt /app/
