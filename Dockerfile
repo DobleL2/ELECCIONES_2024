@@ -2,7 +2,7 @@
 
 FROM python:3.10
 
-WORKDIR /app
+WORKDIR /ELECCIONES_2024
 
 RUN apt-get update && apt-get install -y \
     build-essential \
