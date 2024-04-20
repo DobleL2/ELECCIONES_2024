@@ -1,10 +1,10 @@
-# app/Dockerfile
-
+# Usar python:3.10 como imagen base
 FROM python:3.10
 
+# Establecer el directorio de trabajo en /app
 WORKDIR /app
 
-# Instala dependencias necesarias para el sistema
+# Instalar dependencias necesarias para el sistema
 RUN apt-get update && apt-get install -y \
     build-essential \
     curl \
@@ -12,26 +12,27 @@ RUN apt-get update && apt-get install -y \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-# Clona el repositorio de GitHub
+# Clonar el repositorio (asegúrate de que esta es la ruta correcta y el repositorio es accesible)
 RUN git clone https://github.com/DobleL2/ELECCIONES_2024.git .
 
-# Crea un entorno virtual dentro del contenedor y activa el entorno
+# Crear un entorno virtual e instalar dependencias
 RUN python -m venv venv
 ENV PATH="/app/venv/bin:$PATH"
 
-# Instala dependencias dentro del entorno virtual
+# Actualizar pip e instalar dependencias
 RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 RUN pip install streamlit
 
-# Comprueba la instalación de Streamlit y da permisos de ejecución
+# Exponer el puerto 8501
+EXPOSE 8501
+
+# Comprobar la ubicación de streamlit y asignar permisos de ejecución
 RUN which streamlit
 RUN chmod +x $(which streamlit)
 
-EXPOSE 8501
-
-# Realiza una comprobación de salud
+# Establecer el comando de salud
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
 
-# Configura el punto de entrada para iniciar Streamlit
-ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+# Configurar el punto de entrada para iniciar Streamlit
+ENTRYPOINT ["streamlit", "run", "streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
