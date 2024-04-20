@@ -35,4 +35,4 @@ RUN chmod +x $(which streamlit)
 HEALTHCHECK CMD curl --fail http://localhost:8501/_stcore/health
 
 # Configurar el punto de entrada para iniciar Streamlit
-ENTRYPOINT ["streamlit", "run", "streamlit_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+ENTRYPOINT ["streamlit", "run", "app.py", "--server.port=8501", "--server.address=0.0.0.0"]
