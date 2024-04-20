@@ -3,7 +3,7 @@ version: '3.8'  # Utiliza la versión 3.8 de Docker Compose
 services:
   streamlit_app:  # Nombre del servicio
     build: 
-      context: ./ELECCIONES_2024  # Directorio que contiene el Dockerfile
+      context: ./app  # Directorio que contiene el Dockerfile
       dockerfile: Dockerfile  # Especifica el nombre del Dockerfile si no es 'Dockerfile'
     ports:
       - "8501:8501"  # Mapea el puerto 8501 del contenedor al puerto 8501 del host
