@@ -27,3 +27,4 @@ def muestra1():
 
 def muestra():
     return list(pd.read_csv('data/Muestra.csv',sep=';')['COD_JUNTA'])
+

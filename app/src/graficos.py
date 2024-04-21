@@ -10,17 +10,19 @@ def resumen_general_pregunta(resumen, pregunta):
     total = A['BLANCOS']+ A['NULOS']+ A['SI']+ A['NO']
 
     source = pd.DataFrame({
-        'Opciones': ['BLANCOS', 'NULOS', 'SI', 'NO'],
-        'Valores': [A['BLANCOS'], A['NULOS'], A['SI'], A['NO']],
+        'Opciones': ['BLANCOS', 'NULOS', 'NO', 'SI'],
+        'Orden': ['1.BLANCOS', '2.NULOS', '3.NO', '4.SI'],
+        'Valores': [A['BLANCOS'], A['NULOS'], A['NO'], A['SI']],
     })
     source['%'] = source['Valores']/total
-    source['%'] = source['%'].apply(porcentaje)
+    source['%'] = source['%'].apply(lambda x: f"{x:.2%}")
     
     # Crear gráfico de barras
     bar_chart = alt.Chart(source).mark_bar().encode(
-        x=alt.X('Opciones', axis=alt.Axis(title=None)),  # Quitar el título del eje X
+        x=alt.X('Orden', axis=alt.Axis(title=None)),  # Quitar el título del eje X
         y=alt.Y('Valores', axis=alt.Axis(title=None)),   # Quitar el título del eje Y
-        color=alt.Color('Opciones', scale=alt.Scale(scheme='set1'), legend=None),  # Modificar colores de las barras
+        color=alt.Color('Opciones', scale=alt.Scale(domain=['BLANCOS', 'NULOS', 'NO', 'SI'],
+                                                    range=['#BBBBBB', '#424242', '#1f77b4', '#ff7f0e']), legend=None),  # Modificar colores de las barras
     )
 
     # Agregar texto con los valores en las barras

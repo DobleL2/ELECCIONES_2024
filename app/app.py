@@ -42,6 +42,19 @@ st.set_page_config(layout="wide", page_title='Resultados Conteo', page_icon=':wh
                     menu_items=None ) # Esto quita el menú de opciones (los tres puntos))
 st.markdown('<style>' + open('./style.css').read() + '</style>', unsafe_allow_html=True)
 
+
+
+# Mostrar datos de provincias
+df_provincias = cargar_provincias()
+df_provincias_dict = df_provincias[['COD_PROVINCIA', 'NOM_PROVINCIA']].to_dict(orient='records')
+
+def reemplazar_prov(n):
+    return df_provincias_dict[n]['NOM_PROVINCIA']
+
+# Mostrar datos de juntas
+df_juntas = cargar_juntas()
+
+
 # Incluir CSS personalizado para ocultar el elemento stDecoration
 st.markdown("""
     <style>
@@ -137,6 +150,10 @@ col3.write(f"""
 col3.write(hora_ecuador)
 #metric('Total de actas:',df_transmision.shape[0])
 df_transmision = df_transmision[df_transmision['JUNTA_TRANSMITIDA'].isin(muestra)]
+lista_juntas_ingresadas = list(df_transmision['JUNTA_TRANSMITIDA'])
+juntas_ingresadas = df_juntas[df_juntas['COD_JUNTA'].isin(lista_juntas_ingresadas)]
+juntas_ingresadas['NOM_PROVINCIA'] = juntas_ingresadas['COD_PROVINCIA'].astype(int).apply(reemplazar_prov)
+cantidad_provincias = juntas_ingresadas.groupby(by='NOM_PROVINCIA').count()[['COD_PROVINCIA']].reset_index()
 col1.metric('Dentro de la muestra:',df_transmision.shape[0])
 avance = (df_transmision.shape[0]/len(muestra))*100
 col2.progress(value=int(round(avance,0)),
@@ -178,11 +195,4 @@ elif selected_tab == 'Muestra':
     st.header("Proyección de resultados a partir de muestra matemática")
     
 
-
-# Mostrar datos de provincias
-df_provincias = cargar_provincias()
-
-
-# Mostrar datos de juntas
-df_juntas = cargar_juntas()
 
