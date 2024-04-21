@@ -4,6 +4,5 @@ showErrorDetails = false
 [theme]
 primaryColor = "#0E7CBF"
 backgroundColor = "#F0F0F0"
-secondBackgroundColor = "#0E7CBF"
 textColor = "#191919"
 font = "sans serif"
