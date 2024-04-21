@@ -2,14 +2,20 @@ import pandas as pd
 import altair as alt
 import math
 
+def porcentaje(valor):
+    return str(round(valor*100,2))+ ' %'
+
 def resumen_general_pregunta(resumen, pregunta):
     A = resumen.iloc[pregunta]
+    total = A['BLANCOS']+ A['NULOS']+ A['SI']+ A['NO']
 
     source = pd.DataFrame({
         'Opciones': ['BLANCOS', 'NULOS', 'SI', 'NO'],
         'Valores': [A['BLANCOS'], A['NULOS'], A['SI'], A['NO']],
     })
-
+    source['%'] = source['Valores']/total
+    source['%'] = source['%'].apply(porcentaje)
+    
     # Crear gráfico de barras
     bar_chart = alt.Chart(source).mark_bar().encode(
         x=alt.X('Opciones', axis=alt.Axis(title=None)),  # Quitar el título del eje X
@@ -25,7 +31,7 @@ def resumen_general_pregunta(resumen, pregunta):
         color='black',  # Color del texto
         size=14  # Tamaño del texto
     ).encode(
-        text='Valores'  # Mostrar los valores en las barras
+        text='%'  # Mostrar los valores en las barras
     )
 
     # Combinar gráfico de barras y texto
@@ -44,7 +50,7 @@ def resumen_general_pregunta(resumen, pregunta):
 
 def pie_chart(resumen, pregunta):
     A = resumen.iloc[pregunta]
-
+    
     # Filtrar las categorías 'SI' y 'NO'
     filtered_data = {
         'Opciones': ['SI', 'NO'],

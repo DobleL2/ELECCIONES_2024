@@ -42,6 +42,23 @@ st.set_page_config(layout="wide", page_title='Resultados Conteo', page_icon=':wh
                     menu_items=None ) # Esto quita el menú de opciones (los tres puntos))
 st.markdown('<style>' + open('./style.css').read() + '</style>', unsafe_allow_html=True)
 
+# Incluir CSS personalizado para ocultar el elemento stDecoration
+st.markdown("""
+    <style>
+        #stDecoration {
+            display: none !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+# Incluir CSS personalizado para ocultar el div stToolbar
+st.markdown("""
+    <style>
+        [data-testid="stToolbar"] {
+            display: none !important;
+        }
+    </style>
+""", unsafe_allow_html=True)
+
 # Convertir la hora actual a la zona horaria de Ecuador
 hora_ecuador = cargar_fecha()
 
@@ -76,17 +93,17 @@ tit1.title("Resultados Control Electoral")
 
 
 Preguntas = {
-    'A': 'Apoyo Complementario Fuerzas Armadas',
-    'B': 'Extradición de Ecuatorianos',
-    'C': 'Judicaturas Especializadas',
-    'D': 'Arbitraje Internacional',
-    'E': 'Trabajo a Plazo Fijo y por Horas',
-    'F': 'Control de Armas',
-    'G': 'Incremento de Penas',
-    'H': 'Cumplimiento de Pena Total',
-    'I': 'Tipificación de delitos por porte de armas',
-    'J': 'Uso inmediato de armas usadas en delitos',
-    'K': 'Confiscación de Activos Ilícitos'
+    'A': 'A: Apoyo Complementario Fuerzas Armadas',
+    'B': 'B: Extradición de Ecuatorianos',
+    'C': 'C: Judicaturas Especializadas',
+    'D': 'D: Arbitraje Internacional',
+    'E': 'E: Trabajo a Plazo Fijo y por Horas',
+    'F': 'F: Control de Armas',
+    'G': 'G: Incremento de Penas',
+    'H': 'H: Cumplimiento de Pena Total',
+    'I': 'I: Tipificación de delitos por porte de armas',
+    'J': 'J: Uso inmediato de armas usadas en delitos',
+    'K': 'K: Confiscación de Activos Ilícitos'
 }   
 
 numero_letra = {
@@ -107,21 +124,22 @@ numero_letra = {
 if tit2.button("Actualizar Datos"):
     cargar_fecha.clear()
     cargar_transmision.clear()
-    
-tit2.write(f"""
-**Ultima actualización:** {hora_ecuador}
-""")
+
 
 st.divider()
 col1,col2,col3 = st.columns(3)
 muestra = cargar_muestra()
 muestra1 = cargar_muestra1()
 df_transmision = cargar_transmision()
-col1.metric('Total de actas:',df_transmision.shape[0])
+col3.write(f"""
+**Ultima actualización:** 
+""")
+col3.write(hora_ecuador)
+#metric('Total de actas:',df_transmision.shape[0])
 df_transmision = df_transmision[df_transmision['JUNTA_TRANSMITIDA'].isin(muestra)]
-col2.metric('Dentro de la muestra:',df_transmision.shape[0])
+col1.metric('Dentro de la muestra:',df_transmision.shape[0])
 avance = (df_transmision.shape[0]/len(muestra))*100
-col3.progress(value=int(round(avance,0)),
+col2.progress(value=int(round(avance,0)),
               text=f'###### Avance de actas obtenidas en la muestra: ${round(avance,2)}\%$')
 
 
@@ -146,8 +164,10 @@ if selected_tab =='Dashboard':
         sub_col1,sub_col2 = ref2.columns(2)
         sub_col1.altair_chart(graficos.pie_chart(resumen,pregunta))
         A = resumen.iloc[pregunta]
-        sub_col2.markdown(f'<span style="color:#ff7f0e; font-size: 20px; font-weight: bold;">SI: </span><span style="font-size: 20px;">{str(A["SI"])}</span>', unsafe_allow_html=True)
-        sub_col2.markdown(f'<span style="color:#1f77b4; font-size: 20px; font-weight: bold;">NO: </span><span style="font-size: 20px;">{str(A["NO"])}</span>', unsafe_allow_html=True)
+        total = A['SI'] + A['NO']
+        sub_col2.markdown('<span style="color:#ff7f0e; font-size: 20px; font-weight: bold;">  </span><span style="font-size: 20px;"></span>', unsafe_allow_html=True)
+        sub_col2.markdown(f'<span style="color:#ff7f0e; font-size: 20px; font-weight: bold;">SI: </span><span style="font-size: 20px;">{str(round((A["SI"]/total)*100,2))} %</span>', unsafe_allow_html=True)
+        sub_col2.markdown(f'<span style="color:#1f77b4; font-size: 20px; font-weight: bold;">NO: </span><span style="font-size: 20px;">{str(round((A["NO"]/total)*100,2))} %</span>', unsafe_allow_html=True)
 
         st.divider()
 
