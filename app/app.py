@@ -139,6 +139,8 @@ if tit2.button("Actualizar Datos"):
     cargar_transmision.clear()
 
 
+num_prov = tablas.muestra_provincias()
+
 st.divider()
 col1,col2,col3 = st.columns(3)
 muestra = cargar_muestra()
@@ -154,6 +156,10 @@ lista_juntas_ingresadas = list(df_transmision['JUNTA_TRANSMITIDA'])
 juntas_ingresadas = df_juntas[df_juntas['COD_JUNTA'].isin(lista_juntas_ingresadas)]
 juntas_ingresadas['NOM_PROVINCIA'] = juntas_ingresadas['COD_PROVINCIA'].astype(int).apply(reemplazar_prov)
 cantidad_provincias = juntas_ingresadas.groupby(by='NOM_PROVINCIA').count()[['COD_PROVINCIA']].reset_index()
+cantidad_provincias = cantidad_provincias.merge(num_prov,on='NOM_PROVINCIA')
+cantidad_provincias['%'] = (cantidad_provincias['COD_PROVINCIA']/cantidad_provincias['CANTIDAD_PROV']).apply(lambda x: f"{x:.2%}")
+cantidad_provincias['Progress'] = (cantidad_provincias['COD_PROVINCIA']/cantidad_provincias['CANTIDAD_PROV']).apply(lambda x: int(round(x*100,0)))
+
 col1.metric('Dentro de la muestra:',df_transmision.shape[0])
 avance = (df_transmision.shape[0]/len(muestra))*100
 col2.progress(value=int(round(avance,0)),
@@ -190,7 +196,12 @@ if selected_tab =='Dashboard':
 
 elif selected_tab == 'Provincias':
     st.header("Análisis de progreso por provincia y resultados")
-    
+    for i in range(24):
+        try:
+            B = cantidad_provincias.iloc[i]
+            st.progress(int(B['Progress']),text=f"**{B['NOM_PROVINCIA']}:** {B['%']}")
+        except:
+            pass
 elif selected_tab == 'Muestra':
     st.header("Proyección de resultados a partir de muestra matemática")
     

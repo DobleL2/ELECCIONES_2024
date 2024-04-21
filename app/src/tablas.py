@@ -28,3 +28,8 @@ def muestra1():
 def muestra():
     return list(pd.read_csv('data/Muestra.csv',sep=';')['COD_JUNTA'])
 
+def muestra_provincias():
+    muest = pd.read_csv('data/Muestra.csv',sep=';')
+    muest = muest.groupby(by='NOM_PROVINCIA').count()[['COD_PROVINCIA']].reset_index()
+    muest.columns = ['NOM_PROVINCIA','CANTIDAD_PROV']
+    return muest
