@@ -37,7 +37,9 @@ def cargar_fecha():
     return tiempos.obtener_hora()
 
 # Configuración de página y estilos
-st.set_page_config(layout="wide", page_title='Resultados Conteo', page_icon=':white_circle:')
+st.set_page_config(layout="wide", page_title='Resultados Conteo', page_icon=':white_circle:',
+                       initial_sidebar_state="collapsed",  # Opcional: colapsa la barra lateral al inicio
+                    menu_items=None ) # Esto quita el menú de opciones (los tres puntos))
 st.markdown('<style>' + open('./style.css').read() + '</style>', unsafe_allow_html=True)
 
 # Convertir la hora actual a la zona horaria de Ecuador

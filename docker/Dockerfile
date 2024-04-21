@@ -20,9 +20,14 @@ RUN apt-get update && \
 # Set the working directory in the container
 WORKDIR /app
 
-# Create and activate a virtual environment
-RUN python -m venv venv
-ENV PATH="/venv/bin:$PATH"
+# Install virtualenv
+RUN pip install virtualenv
+
+# Create a virtual environment
+RUN virtualenv venv
+
+# Activate the virtual environment
+RUN /bin/bash -c "source venv/bin/activate"
 
 # Copy the dependencies file to the working directory
 COPY ./app/requirements.txt /app/
