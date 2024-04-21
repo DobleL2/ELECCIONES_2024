@@ -1,21 +1,19 @@
-import streamlit as st
-import altair as alt
 import pandas as pd
+import altair as alt
 
-
-def resumen_general_pregunta(resumen,pregunta):
+def resumen_general_pregunta(resumen, pregunta):
     A = resumen.iloc[pregunta]
 
     source = pd.DataFrame({
-        'Opciones': ['BLANCOS','NULOS','SI','NO'],
-        'Valores': [A['BLANCOS'],A['NULOS'],A['SI'],A['NO']],
+        'Opciones': ['BLANCOS', 'NULOS', 'SI', 'NO'],
+        'Valores': [A['BLANCOS'], A['NULOS'], A['SI'], A['NO']],
     })
 
     # Crear gráfico de barras
     bar_chart = alt.Chart(source).mark_bar().encode(
-        x='Opciones',
-        y='Valores',
-        color=alt.Color('Opciones', scale=alt.Scale(scheme='set1')),  # Modificar colores de las barras
+        x=alt.X('Opciones', axis=alt.Axis(title=None)),  # Quitar el título del eje X
+        y=alt.Y('Valores', axis=alt.Axis(title=None)),   # Quitar el título del eje Y
+        color=alt.Color('Opciones', scale=alt.Scale(scheme='set1'), legend=None),  # Modificar colores de las barras
     )
 
     # Agregar texto con los valores en las barras
@@ -31,9 +29,38 @@ def resumen_general_pregunta(resumen,pregunta):
 
     # Combinar gráfico de barras y texto
     bar_chart_with_text = (bar_chart + text).properties(
-        width=alt.Step(80),  # Modificar el ancho del gráfico
-        height=alt.Step(200)  # Modificar la altura del gráfico
+        autosize=alt.AutoSizeParams(
+            type='fit',  # Ajustar el gráfico para que quepa en el contenedor
+            resize=True  # Permitir que el gráfico se ajuste automáticamente al cambiar el tamaño de la ventana del navegador
+        ),
+        width = 300,
+        height=300 # Altura fija
+        
     )
 
-    # Mostrar gráfico de barras con valores
-    return st.altair_chart(bar_chart_with_text)
+    return bar_chart_with_text
+
+
+def pie_chart(resumen, pregunta):
+    A = resumen.iloc[pregunta]
+
+    # Filtrar las categorías 'SI' y 'NO'
+    filtered_data = {
+        'Opciones': ['SI', 'NO'],
+        'Valores': [A['SI'], A['NO']]
+    }
+
+    source = pd.DataFrame(filtered_data)
+
+    # Crear el gráfico circular (pie chart)
+    pie_chart = alt.Chart(source).mark_arc().encode(
+        angle='Valores',  # Ángulo de cada sector basado en los valores
+        color=alt.Color('Opciones', legend=None),  # Color de cada sector basado en la categoría
+        tooltip=['Opciones', 'Valores']  # Tooltip que muestra la categoría y el valor
+    ).properties(
+        width=300,  # Ancho del gráfico
+        height=300,  # Alto del gráfico
+        title='Pie Chart'  # Título del gráfico
+    )
+
+    return pie_chart

@@ -6,55 +6,72 @@ import src.connection as connection
 import src.tablas as tablas
 import src.etls as etls 
 import src.graficos as graficos
-import matplotlib.pyplot as plt
-import seaborn as sns
-import altair as alt
+import src.tiempos as tiempos
 from st_on_hover_tabs import on_hover_tabs
-import streamlit as st
-st.set_page_config(layout="wide")
+import datetime
+import pytz
 
-st.header("Custom tab component for on-hover navigation bar")
+# Funciones para cargar las tablas
+@st.cache_data
+def cargar_transmision():
+    return tablas.transmision()
+
+@st.cache_data
+def cargar_provincias():
+    return tablas.provincias()
+
+@st.cache_data
+def cargar_juntas():
+    return tablas.juntas()
+
+@st.cache_data
+def cargar_fecha():
+    return tiempos.obtener_hora()
+
+# Configuración de página y estilos
+st.set_page_config(layout="wide", page_title='Resultados Conteo', page_icon=':white_circle:')
 st.markdown('<style>' + open('./style.css').read() + '</style>', unsafe_allow_html=True)
 
 
+# Convertir la hora actual a la zona horaria de Ecuador
+hora_ecuador = cargar_fecha()
+
+# Sidebar con pestañas
 with st.sidebar:
-    tabs = on_hover_tabs(tabName=['Dashboard', 'Money', 'Economy'], 
-                         iconName=['dashboard', 'money', 'economy'], default_choice=0)
+    tabs = on_hover_tabs(tabName=['Dashboard', 'Provincias', 'Muestra'], 
+                         iconName=['dashboard', 'monitoring', 'trending_up'],
+                         styles = {'navtab': {'background-color':'#111',
+                                              'color': '#818181',
+                                              'font-size': '18px',
+                                              'transition': '.3s',
+                                              'white-space': 'nowrap',
+                                              'text-transform': 'uppercase'},
+                                   'tabOptionsStyle': {':hover :hover': {'color': 'white',
+                                                                  'cursor': 'pointer'}},
+                                   'iconStyle':{'position':'fixed',
+                                                'left':'7.5px',
+                                                'text-align': 'left'},
+                                   'tabStyle' : {'list-style-type': 'none',
+                                                 'margin-bottom': '30px',
+                                                 'padding-left': '30px'}},
+                         key="1")
+    selected_tab = st.query_params.get("tab", None)
+    if selected_tab is None:
+        selected_tab = tabs
 
-if tabs =='Dashboard':
-    st.title("Navigation Bar")
-    st.write('Name of option is {}'.format(tabs))
-
-elif tabs == 'Money':
-    st.title("Paper")
-    st.write('Name of option is {}'.format(tabs))
-
-elif tabs == 'Economy':
-    st.title("Tom")
-    st.write('Name of option is {}'.format(tabs))
-
-with st.sidebar:
-        tabs = on_hover_tabs(tabName=['Dashboard', 'Money', 'Economy'], 
-                             iconName=['dashboard', 'money', 'economy'],
-                             styles = {'navtab': {'background-color':'#111',
-                                                  'color': '#818181',
-                                                  'font-size': '18px',
-                                                  'transition': '.3s',
-                                                  'white-space': 'nowrap',
-                                                  'text-transform': 'uppercase'},
-                                       'tabOptionsStyle': {':hover :hover': {'color': 'red',
-                                                                      'cursor': 'pointer'}},
-                                       'iconStyle':{'position':'fixed',
-                                                    'left':'7.5px',
-                                                    'text-align': 'left'},
-                                       'tabStyle' : {'list-style-type': 'none',
-                                                     'margin-bottom': '30px',
-                                                     'padding-left': '30px'}},
-                             key="1")
-
-"""
 # Resultados Control Electoral
-"""
+st.title("Resultados Control Electoral")
+
+# Contenido de la aplicación según la pestaña seleccionada
+if selected_tab =='Dashboard':
+    st.header("Dashboard de resultados generales a nivel nacional")
+
+elif selected_tab == 'Provincias':
+    st.header("Análisis de progreso por provincia y resultados")
+    
+elif selected_tab == 'Muestra':
+    st.header("Proyección de resultados a partir de muestra matemática")
+
 
 Preguntas = {
     'A': 'Apoyo Complementario Fuerzas Armadas',
@@ -84,27 +101,37 @@ numero_letra = {
     10: 'K'
 }
 
-df = tablas.transmision()
-st.metric('Actas ingresadas: ',df.shape[0])
+# Carga de datos
+if st.button("Actualizar Datos"):
+    st.cache_data.clear()
 
-st.write(df)
-
-df = etls.convertir_formato(df)
+f"""
+#### Ultima actualización: {hora_ecuador}
+"""
+# Carga de datos
+df_transmision = cargar_transmision()
+st.metric('Actas ingresadas: ', df_transmision.shape[0])
 
 # Resumen de votos por pregunta
-resumen = df.groupby(by='COD_PREGUNTA').sum(numeric_only=True)
+df_transmision = etls.convertir_formato(df_transmision)
+pregunta_seleccionada = st.selectbox('Pregunta: ', df_transmision['COD_PREGUNTA'].unique())
+resumen = df_transmision.groupby(by='COD_PREGUNTA').sum(numeric_only=True)
 
-for i in range(11):
-    st.subheader(Preguntas[numero_letra[i]])
-    graficos.resumen_general_pregunta(resumen,i)
 
-# Mostrar datos de transmisión
-st.write(df)
+for pregunta in range(11):
+    # Mostrar resumen por pregunta
+    ref1,ref2= st.columns(2)
+    ref1.subheader(Preguntas[numero_letra[pregunta]])
+    ref1.altair_chart(graficos.resumen_general_pregunta(resumen, pregunta))
+    
+    ref2.altair_chart(graficos.pie_chart(resumen,pregunta))
+    "---"
 
-df = tablas.provincias()
 
-st.write(df)
+# Mostrar datos de provincias
+df_provincias = cargar_provincias()
 
-df = tablas.juntas()
 
-st.write(df)
+# Mostrar datos de juntas
+df_juntas = cargar_juntas()
+
