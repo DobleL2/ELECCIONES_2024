@@ -10,6 +10,40 @@ import src.tiempos as tiempos
 from st_on_hover_tabs import on_hover_tabs
 import datetime
 import pytz
+import numpy as np
+import scipy.stats as stats
+import altair as alt
+
+def calcular_intervalo_confianza_proporcion(proporcion, tamaño_muestra, nivel_confianza=0.99):
+    """
+    Calcula el intervalo de confianza para una proporción utilizando la fórmula binomial.
+
+    Args:
+    - proporcion (float): La proporción de interés.
+    - tamaño_muestra (int): El tamaño de la muestra.
+    - nivel_confianza (float, opcional): El nivel de confianza deseado. Por defecto es 0.95.
+
+    Returns:
+    - tuple: Un tuple con el intervalo de confianza inferior y superior.
+    """
+    # Calcular el error estándar de la proporción
+    error_estandar = np.sqrt(proporcion * (1 - proporcion) / tamaño_muestra)
+
+    # Calcular el valor z crítico para el nivel de confianza dado
+    valor_z = stats.norm.ppf((1 + nivel_confianza) / 2)
+
+    # Calcular los límites del intervalo de confianza
+    limite_inferior = proporcion - valor_z * error_estandar
+    limite_superior = proporcion + valor_z * error_estandar
+
+    return limite_inferior, limite_superior, error_estandar
+
+def calcular_intervalo_fila(fila):
+    prop = fila['p_SI_T']
+    tam_muestra = fila['TOTAL_T']
+    limite_inferior, limite_superior, error_estandar = calcular_intervalo_confianza_proporcion(prop, tam_muestra)
+    return pd.Series({'LIM_INF_T': limite_inferior, 'LIM_SUP_T': limite_superior, 'ERROR_ESTANDAR_T': error_estandar})
+
 
 # Funciones para cargar las tablas
 @st.cache_data
@@ -244,6 +278,92 @@ elif selected_tab == 'Provincias':
         st.divider()
 elif selected_tab == 'Muestra':
     st.header("Proyección de resultados a partir de muestra matemática")
+    st.subheader('Seleccione la provincia y la pregunta para ver los resultados')
+    col1,col2,col3 = st.columns(3)
+
+    provincia = col1.selectbox(label='##### Provincia: ',options=['NACIONAL']+list(cantidad_provincias['NOM_PROVINCIA'].unique()))
+    pregu = col2.selectbox(label='##### Pregunta: ',options=list(Preguntas.keys()) )
+    orientacion = col3.radio("Orientación", ["Vertical", "Horizontal"])
+    ordenada = df_transmision
+    ordenada = ordenada[ordenada['COD_PREGUNTA']==letra_numero[pregu]]
+    if provincia != 'NACIONAL':
+        actas_prov = tablas.muestra_lista_provincia(provincia)
+        ordenada = ordenada[ordenada['JUNTA_TRANSMITIDA'].isin(actas_prov)]
+    ordenada['FECHA_HORA'] = pd.to_datetime(ordenada['FECHA_HORA'])
+    ordenada.sort_values(by='FECHA_HORA',inplace=True)
+    # Obtener automáticamente el mínimo de la columna de fecha
+
+
+    def redondear_hora_al_inmediato_inferior(dt):
+        return pd.Timestamp(dt).floor('5min')
+    ordenada['TIEMPO'] = ordenada['FECHA_HORA'].apply(redondear_hora_al_inmediato_inferior)
+    #ordenada.groupby(by='TIEMPO')
+
+    ordenada = ordenada[['BLANCOS','NULOS','SI','NO','TIEMPO']].groupby(by='TIEMPO').sum().reset_index()
+
+    for i in ['BLANCOS','NULOS','SI','NO']:
+        ordenada[i] = ordenada[i].cumsum()
+    ordenada['TOTAL_T'] = ordenada['BLANCOS']+ordenada['NULOS']+ordenada['SI']+ordenada['NO']
+    ordenada['TOTAL_SN'] =ordenada['SI']+ordenada['NO']
+    ordenada['p_SI_T'] = ordenada['SI']/ordenada['TOTAL_T']
+    ordenada['p_SI_SN'] = ordenada['SI']/ordenada['TOTAL_SN']
+    ordenada['p_NO_T'] = ordenada['NO']/ordenada['TOTAL_T']
+    ordenada['p_NO_SN'] = ordenada['NO']/ordenada['TOTAL_SN']
     
+    # Aplicar la función a cada fila del DataFrame
+    intervalos_confianza = ordenada.apply(calcular_intervalo_fila, axis=1)
 
+    # Unir los resultados al DataFrame original
+    df_con_intervalos = pd.concat([ordenada, intervalos_confianza], axis=1)
+    ordenada = df_con_intervalos
+    
+    if orientacion == 'Vertical':
+        source = pd.DataFrame({
+            "yield_error": ordenada['ERROR_ESTANDAR_T'],
+            "yield_center": ordenada['p_SI_T'],
+            "variety": ordenada['TIEMPO'],
+        })
 
+        bar = alt.Chart(source).mark_errorbar().encode(
+            x=alt.X("yield_center:Q").scale(zero=False).title("yield"),
+            xError=("yield_error:Q"),
+            y=alt.Y("variety:N"),
+        )
+
+        point = alt.Chart(source).mark_point(
+            filled=True,
+            color="black"
+        ).encode(
+            alt.X("yield_center:Q"),
+            alt.Y("variety:N"),
+        )
+
+        point + bar
+    else:
+        source = pd.DataFrame({
+            "yield_error": ordenada['ERROR_ESTANDAR_T'],
+            "yield_center": ordenada['p_SI_T'],
+            "variety": ordenada['TIEMPO'],
+        })
+
+        bar = alt.Chart(source).mark_errorbar().encode(
+            y=alt.Y("yield_center:Q").scale(zero=False).title("yield"),  # Cambiar a eje y
+            yError=("yield_error:Q"),  # Error ahora es para el eje y
+            x=alt.X("variety:N", axis=alt.Axis(labelAngle=-85, labelLimit=5)),  # Cambiar a eje x
+        )
+
+        point = alt.Chart(source).mark_point(
+            filled=True,
+            color="black"
+        ).encode(
+            alt.Y("yield_center:Q"),  # Cambiar a eje y
+            alt.X("variety:N"),  # Cambiar a eje x
+        )
+
+        (bar + point).properties(
+            width=300,
+            height=200,
+            title='Proporción con intervalo de error'
+        ).configure_axisX(labelAngle=-45) 
+        
+        bar + point
