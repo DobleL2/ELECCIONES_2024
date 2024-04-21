@@ -1,70 +1,110 @@
 from collections import namedtuple
-import altair as alt
 import math
 import pandas as pd
 import streamlit as st
-import connection as connection
+import src.connection as connection
+import src.tablas as tablas
+import src.etls as etls 
+import src.graficos as graficos
+import matplotlib.pyplot as plt
+import seaborn as sns
+import altair as alt
+from st_on_hover_tabs import on_hover_tabs
+import streamlit as st
+st.set_page_config(layout="wide")
+
+st.header("Custom tab component for on-hover navigation bar")
+st.markdown('<style>' + open('./style.css').read() + '</style>', unsafe_allow_html=True)
+
+
+with st.sidebar:
+    tabs = on_hover_tabs(tabName=['Dashboard', 'Money', 'Economy'], 
+                         iconName=['dashboard', 'money', 'economy'], default_choice=0)
+
+if tabs =='Dashboard':
+    st.title("Navigation Bar")
+    st.write('Name of option is {}'.format(tabs))
+
+elif tabs == 'Money':
+    st.title("Paper")
+    st.write('Name of option is {}'.format(tabs))
+
+elif tabs == 'Economy':
+    st.title("Tom")
+    st.write('Name of option is {}'.format(tabs))
+
+with st.sidebar:
+        tabs = on_hover_tabs(tabName=['Dashboard', 'Money', 'Economy'], 
+                             iconName=['dashboard', 'money', 'economy'],
+                             styles = {'navtab': {'background-color':'#111',
+                                                  'color': '#818181',
+                                                  'font-size': '18px',
+                                                  'transition': '.3s',
+                                                  'white-space': 'nowrap',
+                                                  'text-transform': 'uppercase'},
+                                       'tabOptionsStyle': {':hover :hover': {'color': 'red',
+                                                                      'cursor': 'pointer'}},
+                                       'iconStyle':{'position':'fixed',
+                                                    'left':'7.5px',
+                                                    'text-align': 'left'},
+                                       'tabStyle' : {'list-style-type': 'none',
+                                                     'margin-bottom': '30px',
+                                                     'padding-left': '30px'}},
+                             key="1")
 
 """
-# Welcome to Streamlit!
-
-Edit `/streamlit_app.py` to customize this app to your heart's desire :heart:
-
-If you have any questions, checkout our [documentation](https://docs.streamlit.io) and [community
-forums](https://discuss.streamlit.io).
-
-In the meantime, below is an example of what you can do with just a few lines of code:
+# Resultados Control Electoral
 """
 
-with st.echo(code_location='below'):
-   total_points = st.slider("Number of points in spiral", 1, 5000, 2000)
-   num_turns = st.slider("Number of turns in spiral", 1, 100, 9)
+Preguntas = {
+    'A': 'Apoyo Complementario Fuerzas Armadas',
+    'B': 'Extradición de Ecuatorianos',
+    'C': 'Judicaturas Especializadas',
+    'D': 'Arbitraje Internacional',
+    'E': 'Trabajo a Plazo Fijo y por Horas',
+    'F': 'Control de Armas',
+    'G': 'Incremento de Penas',
+    'H': 'Cumplimiento de Pena Total',
+    'I': 'Tipificación de delitos por porte de armas',
+    'J': 'Uso inmediato de armas usadas en delitos',
+    'K': 'Confiscación de Activos Ilícitos'
+}   
 
-   Point = namedtuple('Point', 'x y')
-   data = []
+numero_letra = {
+    0: 'A',
+    1: 'B',
+    2: 'C',
+    3: 'D',
+    4: 'E',
+    5: 'F',
+    6: 'G',
+    7: 'H',
+    8: 'I',
+    9: 'J',
+    10: 'K'
+}
 
-   points_per_turn = total_points / num_turns
+df = tablas.transmision()
+st.metric('Actas ingresadas: ',df.shape[0])
 
-   for curr_point_num in range(total_points):
-      curr_turn, i = divmod(curr_point_num, points_per_turn)
-      angle = (curr_turn + 1) * 2 * math.pi * i / points_per_turn
-      radius = curr_point_num / total_points
-      x = radius * math.cos(angle)
-      y = radius * math.sin(angle)
-      data.append(Point(x, y))
+st.write(df)
 
-   st.altair_chart(alt.Chart(pd.DataFrame(data), height=500, width=500)
-      .mark_circle(color='#0068c9', opacity=0.5)
-      .encode(x='x:Q', y='y:Q'))
-   
-import pyodbc
-import os
-import pandas as pd
-from sqlalchemy import create_engine
-from dotenv import load_dotenv
-from sqlalchemy.orm import sessionmaker
+df = etls.convertir_formato(df)
 
-load_dotenv('.env')
+# Resumen de votos por pregunta
+resumen = df.groupby(by='COD_PREGUNTA').sum(numeric_only=True)
 
-server = os.getenv('SERVER')
-username ='test2' #os.getenv('USER')
-password = os.getenv('PASSWORD')
-driver= os.getenv('DRIVER')
-database = os.getenv('DATABASE')
+for i in range(11):
+    st.subheader(Preguntas[numero_letra[i]])
+    graficos.resumen_general_pregunta(resumen,i)
 
-def connection():
-    conn = pyodbc.connect(f'DRIVER={driver};SERVER={server};PORT=1433;DATABASE={database};UID={username};PWD={password}')
-    print("Connection successful!")
-    return conn
+# Mostrar datos de transmisión
+st.write(df)
 
-def query_function(query):
-    conn = connection()  # Assuming you have the connection function defined elsewhere
-    data = pd.read_sql(query, conn)  # Execute the query and read into DataFrame
-    conn.close()
-    return data
+df = tablas.provincias()
 
-# Execute query
-query = "SELECT TOP 100 * FROM dbo.JUNTA"
-juntas = query_function(query)
+st.write(df)
 
-st.write(juntas)
+df = tablas.juntas()
+
+st.write(df)
