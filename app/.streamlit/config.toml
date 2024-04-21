@@ -3,7 +3,7 @@ showErrorDetails = false
 
 [theme]
 primaryColor = "#0E7CBF"
-backgroundColor = "#FFFFFF"
+backgroundColor = "#F0F0F0"
 secondBackgroundColor = "#0E7CBF"
-textColor = "#040008"
+textColor = "#191919"
 font = "sans serif"
