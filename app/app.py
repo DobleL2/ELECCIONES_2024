@@ -252,7 +252,7 @@ elif selected_tab == 'Provincias':
 elif selected_tab == 'Muestra':
     st.header("Proyección de resultados a partir de muestra matemática")
     st.subheader('Seleccione la provincia y la pregunta para ver los resultados')
-    col1,col2 = st.columns(3)
+    col1,col2 = st.columns(2)
 
     provincia = col1.selectbox(label='##### Provincia: ',options=['NACIONAL']+list(cantidad_provincias['NOM_PROVINCIA'].unique()))
     pregu = col2.selectbox(label='##### Pregunta: ',options=list(Preguntas.keys()) )
