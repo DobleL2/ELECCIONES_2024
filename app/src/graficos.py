@@ -1,5 +1,6 @@
 import pandas as pd
 import altair as alt
+import math
 
 def resumen_general_pregunta(resumen, pregunta):
     A = resumen.iloc[pregunta]
@@ -53,14 +54,12 @@ def pie_chart(resumen, pregunta):
     source = pd.DataFrame(filtered_data)
 
     # Crear el gráfico circular (pie chart)
-    pie_chart = alt.Chart(source).mark_arc().encode(
+    pie_chart = alt.Chart(source).mark_arc(innerRadius=40).encode(
         angle='Valores',  # Ángulo de cada sector basado en los valores
-        color=alt.Color('Opciones', legend=None),  # Color de cada sector basado en la categoría
-        tooltip=['Opciones', 'Valores']  # Tooltip que muestra la categoría y el valor
+        color=alt.Color('Opciones', scale=alt.Scale(range=['#1f77b4', '#ff7f0e']),legend=None),  # Color de cada sector basado en la categoría
     ).properties(
-        width=300,  # Ancho del gráfico
-        height=300,  # Alto del gráfico
-        title='Pie Chart'  # Título del gráfico
+        width=200,  # Ancho del gráfico
+        height=200,  # Alto del gráfico
     )
 
-    return pie_chart
+    return pie_chart.configure_view(stroke=None)  # Elimina los bordes del gráfico

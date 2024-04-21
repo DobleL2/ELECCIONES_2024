@@ -1,4 +1,5 @@
 import src.connection as connection
+import pandas as pd
 
 def transmision():
     query = """
@@ -20,3 +21,9 @@ def juntas():
         FROM dbo.JUNTA
     """
     return connection.query_function(query=query)
+
+def muestra1():
+    return list(pd.read_csv('data/Muestra_1.csv',sep=';')['COD_JUNTA'])
+
+def muestra():
+    return list(pd.read_csv('data/Muestra.csv',sep=';')['COD_JUNTA'])
