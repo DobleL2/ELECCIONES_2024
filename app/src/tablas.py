@@ -33,3 +33,8 @@ def muestra_provincias():
     muest = muest.groupby(by='NOM_PROVINCIA').count()[['COD_PROVINCIA']].reset_index()
     muest.columns = ['NOM_PROVINCIA','CANTIDAD_PROV']
     return muest
+
+def muestra_lista_provincia(name):
+    aux = pd.read_csv('data/Muestra.csv',sep=';')
+    aux = aux[aux['NOM_PROVINCIA']==name]['COD_JUNTA']
+    return list(aux)

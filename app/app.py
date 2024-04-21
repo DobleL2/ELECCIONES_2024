@@ -120,18 +120,31 @@ Preguntas = {
 }   
 
 numero_letra = {
-    0: 'A',
-    1: 'B',
-    2: 'C',
-    3: 'D',
-    4: 'E',
-    5: 'F',
-    6: 'G',
-    7: 'H',
-    8: 'I',
-    9: 'J',
-    10: 'K'
+    1: 'A',
+    2: 'B',
+    3: 'C',
+    4: 'D',
+    5: 'E',
+    6: 'F',
+    7: 'G',
+    8: 'H',
+    9: 'I',
+    10: 'J',
+    11: 'K'
 }
+
+letra_numero = {
+    'A':1, 
+    'B':2, 
+    'C':3, 
+    'D':4, 
+    'E':5, 
+    'F':6, 
+    'G':7, 
+    'H':8, 
+    'I':9, 
+    'J':10, 
+    'K':11, }
 
 # Carga de datos
 if tit2.button("Actualizar Datos"):
@@ -172,6 +185,7 @@ col2.progress(value=int(round(avance,0)),
 df_transmision = etls.convertir_formato(df_transmision)
 #pregunta_seleccionada = st.selectbox('Pregunta: ', df_transmision['COD_PREGUNTA'].unique())
 resumen = df_transmision.groupby(by='COD_PREGUNTA').sum(numeric_only=True)
+st.write(resumen)
 
 st.divider()
 # Contenido de la aplicación según la pestaña seleccionada
@@ -179,7 +193,7 @@ if selected_tab =='Dashboard':
     st.header("Dashboard de resultados generales a nivel nacional")
     for pregunta in range(11):
         # Mostrar resumen por pregunta
-        st.subheader(Preguntas[numero_letra[pregunta]])
+        st.subheader(Preguntas[numero_letra[pregunta+1]])
         ref1,ref2= st.columns(2)
         
         ref1.altair_chart(graficos.resumen_general_pregunta(resumen, pregunta))
@@ -196,12 +210,38 @@ if selected_tab =='Dashboard':
 
 elif selected_tab == 'Provincias':
     st.header("Análisis de progreso por provincia y resultados")
-    for i in range(24):
+    for i in range(29):
         try:
             B = cantidad_provincias.iloc[i]
             st.progress(int(B['Progress']),text=f"**{B['NOM_PROVINCIA']}:** {B['%']}")
         except:
             pass
+    st.divider()
+    st.header('Seleccione la provincia y la pregunta para ver los resultados')
+    col1,col2 = st.columns(2)
+    provincia = col1.selectbox(label='##### Provincia: ',options=list(cantidad_provincias['NOM_PROVINCIA'].unique())) 
+    pregu = col2.selectbox(label='##### Pregunta: ',options=list(Preguntas.keys()) )
+    if provincia != None and pregu!= None:
+        muestra_provincia = tablas.muestra_lista_provincia(provincia)
+        prov_transmision = df_transmision[df_transmision['JUNTA_TRANSMITIDA'].isin(muestra_provincia)]
+        resumen_prov = prov_transmision[prov_transmision['COD_PREGUNTA']==letra_numero[pregu]].sum(numeric_only=True)
+        resumen_prov = pd.DataFrame(resumen_prov).transpose()
+
+
+        st.subheader(Preguntas[pregu])
+        ref1,ref2= st.columns(2)
+
+        ref1.altair_chart(graficos.resumen_general_pregunta(resumen_prov, 0))
+        
+        sub_col1,sub_col2 = ref2.columns(2)
+        sub_col1.altair_chart(graficos.pie_chart(resumen_prov,0))
+        A = resumen_prov.iloc[0]
+        total = A['SI'] + A['NO']
+        sub_col2.markdown('<span style="color:#ff7f0e; font-size: 20px; font-weight: bold;">  </span><span style="font-size: 20px;"></span>', unsafe_allow_html=True)
+        sub_col2.markdown(f'<span style="color:#ff7f0e; font-size: 20px; font-weight: bold;">SI: </span><span style="font-size: 20px;">{str(round((A["SI"]/total)*100,2))} %</span>', unsafe_allow_html=True)
+        sub_col2.markdown(f'<span style="color:#1f77b4; font-size: 20px; font-weight: bold;">NO: </span><span style="font-size: 20px;">{str(round((A["NO"]/total)*100,2))} %</span>', unsafe_allow_html=True)
+
+        st.divider()
 elif selected_tab == 'Muestra':
     st.header("Proyección de resultados a partir de muestra matemática")
     
