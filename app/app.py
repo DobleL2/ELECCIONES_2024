@@ -14,35 +14,8 @@ import numpy as np
 import scipy.stats as stats
 import altair as alt
 
-def calcular_intervalo_confianza_proporcion(proporcion, tamaño_muestra, nivel_confianza=0.99):
-    """
-    Calcula el intervalo de confianza para una proporción utilizando la fórmula binomial.
 
-    Args:
-    - proporcion (float): La proporción de interés.
-    - tamaño_muestra (int): El tamaño de la muestra.
-    - nivel_confianza (float, opcional): El nivel de confianza deseado. Por defecto es 0.95.
 
-    Returns:
-    - tuple: Un tuple con el intervalo de confianza inferior y superior.
-    """
-    # Calcular el error estándar de la proporción
-    error_estandar = np.sqrt(proporcion * (1 - proporcion) / tamaño_muestra)
-
-    # Calcular el valor z crítico para el nivel de confianza dado
-    valor_z = stats.norm.ppf((1 + nivel_confianza) / 2)
-
-    # Calcular los límites del intervalo de confianza
-    limite_inferior = proporcion - valor_z * error_estandar
-    limite_superior = proporcion + valor_z * error_estandar
-
-    return limite_inferior, limite_superior, error_estandar
-
-def calcular_intervalo_fila(fila):
-    prop = fila['p_SI_T']
-    tam_muestra = fila['TOTAL_T']
-    limite_inferior, limite_superior, error_estandar = calcular_intervalo_confianza_proporcion(prop, tam_muestra)
-    return pd.Series({'LIM_INF_T': limite_inferior, 'LIM_SUP_T': limite_superior, 'ERROR_ESTANDAR_T': error_estandar})
 
 
 # Funciones para cargar las tablas
@@ -279,11 +252,10 @@ elif selected_tab == 'Provincias':
 elif selected_tab == 'Muestra':
     st.header("Proyección de resultados a partir de muestra matemática")
     st.subheader('Seleccione la provincia y la pregunta para ver los resultados')
-    col1,col2,col3 = st.columns(3)
+    col1,col2 = st.columns(3)
 
     provincia = col1.selectbox(label='##### Provincia: ',options=['NACIONAL']+list(cantidad_provincias['NOM_PROVINCIA'].unique()))
     pregu = col2.selectbox(label='##### Pregunta: ',options=list(Preguntas.keys()) )
-    orientacion = col3.radio("Orientación", ["Vertical", "Horizontal"])
     ordenada = df_transmision
     ordenada = ordenada[ordenada['COD_PREGUNTA']==letra_numero[pregu]]
     if provincia != 'NACIONAL':
@@ -309,7 +281,44 @@ elif selected_tab == 'Muestra':
     ordenada['p_SI_SN'] = ordenada['SI']/ordenada['TOTAL_SN']
     ordenada['p_NO_T'] = ordenada['NO']/ordenada['TOTAL_T']
     ordenada['p_NO_SN'] = ordenada['NO']/ordenada['TOTAL_SN']
-    
+    def calcular_intervalo_confianza_proporcion(proporcion, tamaño_muestra, nivel_confianza=0.99):
+        """
+        Calcula el intervalo de confianza para una proporción utilizando la fórmula binomial.
+
+        Args:
+        - proporcion (float): La proporción de interés.
+        - tamaño_muestra (int): El tamaño de la muestra.
+        - nivel_confianza (float, opcional): El nivel de confianza deseado. Por defecto es 0.95.
+
+        Returns:
+        - tuple: Un tuple con el intervalo de confianza inferior y superior.
+        """
+        # Calcular el error estándar de la proporción
+        error_estandar = np.sqrt(proporcion * (1 - proporcion) / tamaño_muestra)
+
+        # Calcular el valor z crítico para el nivel de confianza dado
+        valor_z = stats.norm.ppf((1 + nivel_confianza) / 2)
+
+        # Calcular los límites del intervalo de confianza
+        limite_inferior = proporcion - valor_z * error_estandar
+        limite_superior = proporcion + valor_z * error_estandar
+
+        return limite_inferior, limite_superior, error_estandar
+
+    def calcular_intervalo_fila(fila):
+        prop = fila['p_SI_T']
+        tam_muestra = fila['TOTAL_T']
+        limite_inferior_si_t, limite_superior_si_t, error_estandar_si_t = calcular_intervalo_confianza_proporcion(prop, tam_muestra)
+        prop = fila['p_NO_T']
+        tam_muestra = fila['TOTAL_T']
+        limite_inferior_no_t, limite_superior_no_t, error_estandar_no_t = calcular_intervalo_confianza_proporcion(prop, tam_muestra)
+        prop = fila['p_SI_SN']
+        tam_muestra = fila['TOTAL_SN']
+        limite_inferior_si_sn, limite_superior_si_sn, error_estandar_si_sn = calcular_intervalo_confianza_proporcion(prop, tam_muestra)
+        prop = fila['p_NO_SN']
+        tam_muestra = fila['TOTAL_SN']
+        limite_inferior_no_sn, limite_superior_no_sn, error_estandar_no_sn = calcular_intervalo_confianza_proporcion(prop, tam_muestra)
+        return pd.Series({'LIM_INF_SI_T': limite_inferior_si_t, 'LIM_SUP_SI_T': limite_superior_si_t, 'ERROR_ESTANDAR_SI_T': error_estandar_si_t,'LIM_INF_NO_T': limite_inferior_no_t, 'LIM_SUP_NO_T': limite_superior_no_t, 'ERROR_ESTANDAR_NO_T': error_estandar_no_t,'LIM_INF_SI_SN': limite_inferior_si_sn, 'LIM_SUP_SI_SN': limite_superior_si_sn, 'ERROR_ESTANDAR_SI_SN': error_estandar_si_sn,'LIM_INF_NO_SN': limite_inferior_no_sn, 'LIM_SUP_NO_SN': limite_superior_no_sn, 'ERROR_ESTANDAR_NO_SN': error_estandar_no_sn})
     # Aplicar la función a cada fila del DataFrame
     intervalos_confianza = ordenada.apply(calcular_intervalo_fila, axis=1)
 
@@ -317,53 +326,162 @@ elif selected_tab == 'Muestra':
     df_con_intervalos = pd.concat([ordenada, intervalos_confianza], axis=1)
     ordenada = df_con_intervalos
     
-    if orientacion == 'Vertical':
-        source = pd.DataFrame({
-            "yield_error": ordenada['ERROR_ESTANDAR_T'],
-            "yield_center": ordenada['p_SI_T'],
-            "variety": ordenada['TIEMPO'],
-        })
 
-        bar = alt.Chart(source).mark_errorbar().encode(
-            x=alt.X("yield_center:Q").scale(zero=False).title("yield"),
-            xError=("yield_error:Q"),
-            y=alt.Y("variety:N"),
-        )
+    st.title(Preguntas[pregu])
+    st.header('Analisis del SI')
+    col1,col2 =st.columns(2)
+    col1.header('Intervalos de confianza para la estabilización de resultados generales')
+    # Creamos los datos
+    source = pd.DataFrame({
+        "yield_error": ordenada['ERROR_ESTANDAR_SI_T'],
+        "yield_center": ordenada['p_SI_T'],
+        "variety": ordenada['TIEMPO'],
+    })
 
-        point = alt.Chart(source).mark_point(
-            filled=True,
-            color="black"
-        ).encode(
-            alt.X("yield_center:Q"),
-            alt.Y("variety:N"),
-        )
+    # Creamos la visualización
+    bar = alt.Chart(source).mark_errorbar().encode(
+        x=alt.X("yield_center:Q").scale(zero=False).title("yield"),
+        xError=("yield_error:Q"),
+        y=alt.Y("variety:N", title="Variety"),  # Cambiamos el título del eje y
+    )
 
-        point + bar
-    else:
-        source = pd.DataFrame({
-            "yield_error": ordenada['ERROR_ESTANDAR_T'],
-            "yield_center": ordenada['p_SI_T'],
-            "variety": ordenada['TIEMPO'],
-        })
+    point = alt.Chart(source).mark_point(
+        filled=True,
+        color="black"
+    ).encode(
+        alt.X("yield_center:Q"),
+        alt.Y("variety:N"),
+    )
 
-        bar = alt.Chart(source).mark_errorbar().encode(
-            y=alt.Y("yield_center:Q").scale(zero=False).title("yield"),  # Cambiar a eje y
-            yError=("yield_error:Q"),  # Error ahora es para el eje y
-            x=alt.X("variety:N", axis=alt.Axis(labelAngle=-85, labelLimit=5)),  # Cambiar a eje x
-        )
+    # Renombramos los valores del eje y
+    bar = bar.transform_calculate(
+        variety_label="datum.variety"  # Puedes ajustar esta transformación según tus necesidades
+    ).encode(
+        y=alt.Y("variety:N", axis=alt.Axis(title="Variety", labels=False), sort=None),
+        text=alt.Text("variety_label:N")
+    )
+    def imprimir_en_porcentaje(valor):
+        porcentaje = valor * 100
+        return "{:.2f}%".format(porcentaje)
+    # Mostramos el gráfico en Streamlit
+    col1.altair_chart(point + bar)
+    sub1,sub2,sub3 = col1.columns(3)
+    sub1.metric('LIM INF',imprimir_en_porcentaje(list(ordenada['LIM_INF_SI_T'])[-1]))
+    sub2.metric('VALOR',imprimir_en_porcentaje(list(ordenada['p_SI_T'])[-1]))
+    sub3.metric('LIM INF',imprimir_en_porcentaje(list(ordenada['LIM_SUP_SI_T'])[-1]))
+    col2.header('Intervalos de confianza para la estabilización de resultados VOTOS VALIDOS')
+    # Creamos los datos
+    source = pd.DataFrame({
+        "yield_error": ordenada['ERROR_ESTANDAR_SI_SN'],
+        "yield_center": ordenada['p_SI_SN'],
+        "variety": ordenada['TIEMPO'],
+    })
 
-        point = alt.Chart(source).mark_point(
-            filled=True,
-            color="black"
-        ).encode(
-            alt.Y("yield_center:Q"),  # Cambiar a eje y
-            alt.X("variety:N"),  # Cambiar a eje x
-        )
+    # Creamos la visualización
+    bar = alt.Chart(source).mark_errorbar().encode(
+        x=alt.X("yield_center:Q").scale(zero=False).title("yield"),
+        xError=("yield_error:Q"),
+        y=alt.Y("variety:N", title="Variety"),  # Cambiamos el título del eje y
+    )
 
-        (bar + point).properties(
-            width=300,
-            height=200,
-            title='Proporción con intervalo de error'
-        ).configure_axisX(labelAngle=-45) 
-        
-        bar + point
+    point = alt.Chart(source).mark_point(
+        filled=True,
+        color="black"
+    ).encode(
+        alt.X("yield_center:Q"),
+        alt.Y("variety:N"),
+    )
+
+    # Renombramos los valores del eje y
+    bar = bar.transform_calculate(
+        variety_label="datum.variety"  # Puedes ajustar esta transformación según tus necesidades
+    ).encode(
+        y=alt.Y("variety:N", axis=alt.Axis(title="Variety", labels=False), sort=None),
+        text=alt.Text("variety_label:N")
+    )
+
+    # Mostramos el gráfico en Streamlit
+    col2.altair_chart(point + bar)
+    sub1,sub2,sub3 = col2.columns(3)
+    sub1.metric('LIM INF',imprimir_en_porcentaje(list(ordenada['LIM_INF_SI_SN'])[-1]))
+    sub2.metric('VALOR',imprimir_en_porcentaje(list(ordenada['p_SI_SN'])[-1]))
+    sub3.metric('LIM INF',imprimir_en_porcentaje(list(ordenada['LIM_SUP_SI_SN'])[-1]))
+    st.divider()
+    st.header('Analisis del NO')
+    col1,col2 =st.columns(2)
+    col1.header('Intervalos de confianza para la estabilización de resultados generales')
+    # Creamos los datos
+    source = pd.DataFrame({
+        "yield_error": ordenada['ERROR_ESTANDAR_NO_T'],
+        "yield_center": ordenada['p_NO_T'],
+        "variety": ordenada['TIEMPO'],
+    })
+
+    # Creamos la visualización
+    bar = alt.Chart(source).mark_errorbar().encode(
+        x=alt.X("yield_center:Q").scale(zero=False).title("yield"),
+        xError=("yield_error:Q"),
+        y=alt.Y("variety:N", title="Variety"),  # Cambiamos el título del eje y
+    )
+
+    point = alt.Chart(source).mark_point(
+        filled=True,
+        color="black"
+    ).encode(
+        alt.X("yield_center:Q"),
+        alt.Y("variety:N"),
+    )
+
+    # Renombramos los valores del eje y
+    bar = bar.transform_calculate(
+        variety_label="datum.variety"  # Puedes ajustar esta transformación según tus neceNOdades
+    ).encode(
+        y=alt.Y("variety:N", axis=alt.Axis(title="Variety", labels=False), sort=None),
+        text=alt.Text("variety_label:N")
+    )
+    def imprimir_en_porcentaje(valor):
+        porcentaje = valor * 100
+        return "{:.2f}%".format(porcentaje)
+    # Mostramos el gráfico en Streamlit
+    col1.altair_chart(point + bar)
+    sub1,sub2,sub3 = col1.columns(3)
+    sub1.metric('LIM INF',imprimir_en_porcentaje(list(ordenada['LIM_INF_NO_T'])[-1]))
+    sub2.metric('VALOR',imprimir_en_porcentaje(list(ordenada['p_NO_T'])[-1]))
+    sub3.metric('LIM INF',imprimir_en_porcentaje(list(ordenada['LIM_SUP_NO_T'])[-1]))
+    col2.header('Intervalos de confianza para la estabilización de resultados VOTOS VALIDOS')
+    # Creamos los datos
+    source = pd.DataFrame({
+        "yield_error": ordenada['ERROR_ESTANDAR_NO_SN'],
+        "yield_center": ordenada['p_NO_SN'],
+        "variety": ordenada['TIEMPO'],
+    })
+
+    # Creamos la visualización
+    bar = alt.Chart(source).mark_errorbar().encode(
+        x=alt.X("yield_center:Q").scale(zero=False).title("yield"),
+        xError=("yield_error:Q"),
+        y=alt.Y("variety:N", title="Variety"),  # Cambiamos el título del eje y
+    )
+
+    point = alt.Chart(source).mark_point(
+        filled=True,
+        color="black"
+    ).encode(
+        alt.X("yield_center:Q"),
+        alt.Y("variety:N"),
+    )
+
+    # Renombramos los valores del eje y
+    bar = bar.transform_calculate(
+        variety_label="datum.variety"  # Puedes ajustar esta transformación según tus neceNOdades
+    ).encode(
+        y=alt.Y("variety:N", axis=alt.Axis(title="Variety", labels=False), sort=None),
+        text=alt.Text("variety_label:N")
+    )
+
+    # Mostramos el gráfico en Streamlit
+    col2.altair_chart(point + bar)
+    sub1,sub2,sub3 = col2.columns(3)
+    sub1.metric('LIM INF',imprimir_en_porcentaje(list(ordenada['LIM_INF_NO_SN'])[-1]))
+    sub2.metric('VALOR',imprimir_en_porcentaje(list(ordenada['p_NO_SN'])[-1]))
+    sub3.metric('LIM INF',imprimir_en_porcentaje(list(ordenada['LIM_SUP_NO_SN'])[-1]))

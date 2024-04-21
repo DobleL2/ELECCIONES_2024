@@ -4,7 +4,7 @@ import pandas as pd
 def transmision():
     query = """
         SELECT * 
-        FROM dbo.TRANSMISION_CR_3_SIMULACION
+        FROM dbo.TRANSMISION_CR_3
     """
     return connection.query_function(query=query)
 
