@@ -163,7 +163,7 @@ col3.write(f"""
 **Ultima actualización:** 
 """)
 col3.write(hora_ecuador)
-#metric('Total de actas:',df_transmision.shape[0])
+col1.metric('Total de actas:',df_transmision.shape[0])
 df_transmision = df_transmision[df_transmision['JUNTA_TRANSMITIDA'].isin(muestra)]
 lista_juntas_ingresadas = list(df_transmision['JUNTA_TRANSMITIDA'])
 juntas_ingresadas = df_juntas[df_juntas['COD_JUNTA'].isin(lista_juntas_ingresadas)]
@@ -185,7 +185,7 @@ col2.progress(value=int(round(avance,0)),
 df_transmision = etls.convertir_formato(df_transmision)
 #pregunta_seleccionada = st.selectbox('Pregunta: ', df_transmision['COD_PREGUNTA'].unique())
 resumen = df_transmision.groupby(by='COD_PREGUNTA').sum(numeric_only=True)
-st.write(resumen)
+
 
 st.divider()
 # Contenido de la aplicación según la pestaña seleccionada
