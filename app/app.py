@@ -228,7 +228,14 @@ elif selected_tab == 'Provincias':
     for i in range(29):
         try:
             B = cantidad_provincias.iloc[i]
-            st.progress(int(B['Progress']),text=f"**{B['NOM_PROVINCIA']}:** {B['%']} "+"   . . . .   "+    f"({B['COD_PROVINCIA']}/{B['CANTIDAD_PROV']})")
+            if B['NOM_PROVINCIA'] in ["GUAYAS","MANABI","PICHINCHA",'LOS RIOS','COTOPAXI','ESMERALDAS']:
+                emoji = "📊📈"
+                emoji_ = "🟠"
+                
+            else:
+                emoji = ''
+                emoji_ = ''
+            st.progress(int(B['Progress']),text=f"{emoji_} **{B['NOM_PROVINCIA']}:** {B['%']} "+f"   . .  . .   "+    f"({B['COD_PROVINCIA']}/{B['CANTIDAD_PROV']}) . . . .  {emoji}")
         except:
             pass
     st.divider()
@@ -348,7 +355,7 @@ elif selected_tab == 'Muestra':
     source = pd.DataFrame({
         "yield_error": ordenada['ERROR_ESTANDAR_SI_T'],
         "yield_center": ordenada['p_SI_T'],
-        "variety": ordenada['TIEMPO'],
+        "variety": ordenada['TIEMPO'], 
     })
 
     # Creamos la visualización
@@ -498,3 +505,6 @@ elif selected_tab == 'Muestra':
     sub1.metric('LIM INF',imprimir_en_porcentaje(list(ordenada['LIM_INF_NO_SN'])[-1]))
     sub2.metric('VALOR',imprimir_en_porcentaje(list(ordenada['p_NO_SN'])[-1]))
     sub3.metric('LIM INF',imprimir_en_porcentaje(list(ordenada['LIM_SUP_NO_SN'])[-1]))
+    
+    # GUAYAS, MANABI, PICHINCHA, LOS RIOS, COTOPAXI Y ESMERALDAS
+    

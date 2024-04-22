@@ -50,3 +50,6 @@ streamlit-on-Hover-tabs==1.0.1
 streamlit
 matplotlib
 seaborn
+htbuilder
+FPDF
+vl-convert-python
