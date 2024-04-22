@@ -228,7 +228,7 @@ elif selected_tab == 'Provincias':
     for i in range(29):
         try:
             B = cantidad_provincias.iloc[i]
-            st.progress(int(B['Progress']),text=f"**{B['NOM_PROVINCIA']}:** {B['%']}")
+            st.progress(int(B['Progress']),text=f"**{B['NOM_PROVINCIA']}:** {B['%']} "+"   . . . .   "+    f"({B['COD_PROVINCIA']}/{B['CANTIDAD_PROV']})")
         except:
             pass
     st.divider()
