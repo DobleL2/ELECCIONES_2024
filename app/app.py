@@ -105,10 +105,14 @@ with st.sidebar:
     if selected_tab is None:
         selected_tab = tabs
 
-tit1,tit2 = st.columns([3,1])
-# Resultados Control Electoral
-tit1.title("Resultados Control Electoral")
+# Cargar y mostrar el logo
+logo_image = 'images/logo.png'  # Cambia 'ruta_del_logo.png' por la ruta de tu archivo de imagen del logo
 
+tit1,tit2,tit3 = st.columns([1,3,1])
+# Resultados Control Electoral
+tit1.image(logo_image, width=150)  # Ajusta el ancho según sea necesario
+tit2.title("Resultados Conteo Rápido")
+tit2.subheader("Muestra Matemática")
 
 
 
@@ -154,7 +158,7 @@ letra_numero = {
     'K':11, }
 
 # Carga de datos
-if tit2.button("Actualizar Datos"):
+if tit3.button("Actualizar Datos"):
     cargar_fecha.clear()
     cargar_transmision.clear()
 
@@ -199,6 +203,10 @@ st.divider()
 if selected_tab =='Dashboard':
     st.header("Dashboard de resultados generales a nivel nacional")
     for pregunta in range(11):
+        if pregunta == 0:
+            st.title('Referendum')
+        if pregunta == 5:
+            st.title('Consulta Popular')
         # Mostrar resumen por pregunta
         st.subheader(Preguntas[numero_letra[pregunta+1]])
         ref1,ref2= st.columns(2)
@@ -225,30 +233,35 @@ elif selected_tab == 'Provincias':
             pass
     st.divider()
     st.header('Seleccione la provincia y la pregunta para ver los resultados')
-    col1,col2 = st.columns(2)
-    provincia = col1.selectbox(label='##### Provincia: ',options=list(cantidad_provincias['NOM_PROVINCIA'].unique())) 
-    pregu = col2.selectbox(label='##### Pregunta: ',options=list(Preguntas.keys()) )
-    if provincia != None and pregu!= None:
-        muestra_provincia = tablas.muestra_lista_provincia(provincia)
-        prov_transmision = df_transmision[df_transmision['JUNTA_TRANSMITIDA'].isin(muestra_provincia)]
-        resumen_prov = prov_transmision[prov_transmision['COD_PREGUNTA']==letra_numero[pregu]].sum(numeric_only=True)
-        resumen_prov = pd.DataFrame(resumen_prov).transpose()
+    #col1,col2 = st.columns(2)
+    provincia = st.selectbox(label='##### Provincia: ',options=list(cantidad_provincias['NOM_PROVINCIA'].unique())) 
+    #pregu = col2.selectbox(label='##### Pregunta: ',options=list(Preguntas.keys()) )
+    if provincia != None:
+        for pregu in list(Preguntas.keys()):
+            if pregu == 'A':
+                st.title('Referendum')
+            if pregu == 'F':
+                st.title('Consulta Popular')
+            muestra_provincia = tablas.muestra_lista_provincia(provincia)
+            prov_transmision = df_transmision[df_transmision['JUNTA_TRANSMITIDA'].isin(muestra_provincia)]
+            resumen_prov = prov_transmision[prov_transmision['COD_PREGUNTA']==letra_numero[pregu]].sum(numeric_only=True)
+            resumen_prov = pd.DataFrame(resumen_prov).transpose()
 
 
-        st.subheader(Preguntas[pregu])
-        ref1,ref2= st.columns(2)
+            st.subheader(Preguntas[pregu])
+            ref1,ref2= st.columns(2)
 
-        ref1.altair_chart(graficos.resumen_general_pregunta(resumen_prov, 0))
-        
-        sub_col1,sub_col2 = ref2.columns(2)
-        sub_col1.altair_chart(graficos.pie_chart(resumen_prov,0))
-        A = resumen_prov.iloc[0]
-        total = A['SI'] + A['NO']
-        sub_col2.markdown('<span style="color:#ff7f0e; font-size: 20px; font-weight: bold;">  </span><span style="font-size: 20px;"></span>', unsafe_allow_html=True)
-        sub_col2.markdown(f'<span style="color:#ff7f0e; font-size: 20px; font-weight: bold;">SI: </span><span style="font-size: 20px;">{str(round((A["SI"]/total)*100,2))} %</span>', unsafe_allow_html=True)
-        sub_col2.markdown(f'<span style="color:#1f77b4; font-size: 20px; font-weight: bold;">NO: </span><span style="font-size: 20px;">{str(round((A["NO"]/total)*100,2))} %</span>', unsafe_allow_html=True)
+            ref1.altair_chart(graficos.resumen_general_pregunta(resumen_prov, 0))
+            
+            sub_col1,sub_col2 = ref2.columns(2)
+            sub_col1.altair_chart(graficos.pie_chart(resumen_prov,0))
+            A = resumen_prov.iloc[0]
+            total = A['SI'] + A['NO']
+            sub_col2.markdown('<span style="color:#ff7f0e; font-size: 20px; font-weight: bold;">  </span><span style="font-size: 20px;"></span>', unsafe_allow_html=True)
+            sub_col2.markdown(f'<span style="color:#ff7f0e; font-size: 20px; font-weight: bold;">SI: </span><span style="font-size: 20px;">{str(round((A["SI"]/total)*100,2))} %</span>', unsafe_allow_html=True)
+            sub_col2.markdown(f'<span style="color:#1f77b4; font-size: 20px; font-weight: bold;">NO: </span><span style="font-size: 20px;">{str(round((A["NO"]/total)*100,2))} %</span>', unsafe_allow_html=True)
 
-        st.divider()
+            st.divider()
 elif selected_tab == 'Muestra':
     st.header("Proyección de resultados a partir de muestra matemática")
     st.subheader('Seleccione la provincia y la pregunta para ver los resultados')

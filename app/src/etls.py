@@ -36,6 +36,7 @@ def convertir_formato(actas):
                     'VALIDA',
                     'FECHA_HORA']]
         base_vertical = pd.concat([base_vertical,aux])
+    base_vertical = base_vertical[base_vertical['VALIDA']=='1']
     print("--------------- SE HA EXPORTADO LA BASE EN EL FORMATO CORRESPONDIENTE ----------------")
     #base_vertical = base_vertical[base_vertical['VALIDA']==1].drop('VALIDA')
     base_vertical = base_vertical.sort_values(by=['JUNTA_TRANSMITIDA','COD_PREGUNTA']).reset_index(drop=True)
