@@ -67,6 +67,7 @@ pdf.add_page()
 
 
 
+import pandas as pd
 
 PREGUNTAS = pd.read_excel('../resultados_azure/CATALOGO/PREGUNTAS.xls')
 CANTON = pd.read_excel('../resultados_azure/CATALOGO/CANTON.xls')
@@ -87,7 +88,9 @@ bases_azure = [
     "../resultados_azure/F_CONSULTAPOPULAR_PREGUNTA1_2024.04.25_01.55.06.txt",
     "../resultados_azure/G_CONSULTAPOPULAR_PREGUNTA2_2024.04.25_01.55.08.txt",
     "../resultados_azure/H_CONSULTAPOPULAR_PREGUNTA3_2024.04.25_01.55.09.txt",
-    "../resultados_azure/I_CONSULTAPOPULAR_PREGUNTA4_2024.04.25_01.55.09.txt"
+    "../resultados_azure/I_CONSULTAPOPULAR_PREGUNTA4_2024.04.25_01.55.09.txt",
+    "../resultados_azure/J_CONSULTAPOPULAR_PREGUNTA5_2024.04.25_01.55.10.txt",
+    "../resultados_azure/K_CONSULTAPOPULAR_PREGUNTA6_2024.04.25_01.55.11.txt"
 ]
 
 final = pd.DataFrame()
@@ -135,10 +138,15 @@ resultado_prop['SI_prop'] = resultado_prop['SI']/resultado_prop['TOTAL']
 resultado_prop['NO %'] = resultado_prop['NO_prop'].apply(lambda x: f"{x:.2%}")
 resultado_prop['SI %'] = resultado_prop['SI_prop'].apply(lambda x: f"{x:.2%}")
 
+aux = 1
 for pregunta in preguntas:
     df1 = resultado_prop[resultado_prop['NOM_PREGUNTA']==pregunta][['NOM_PROVINCIA','SI %','NO %']]
     df2 = resultado_prop[resultado_prop['NOM_PREGUNTA']==pregunta][['NOM_PROVINCIA',0]]
-    
+    df2[0] = df2[0].astype(float).apply(lambda x: round(x,2))
+    df1.columns = ['PROVINCIA','SI %','NO %']
+    df2.columns = ['PROVINCIA','INDICE PROP']
+
+
     prop_SI = resultado_prop[(resultado_prop['NOM_PREGUNTA']==pregunta) & (resultado_prop[1]=='SI')][['NOM_PROVINCIA','SI_prop']].set_index('NOM_PROVINCIA').to_dict()['SI_prop']
     prop_NO = resultado_prop[(resultado_prop['NOM_PREGUNTA']==pregunta) & (resultado_prop[1]=='NO')][['NOM_PROVINCIA','NO_prop']].set_index('NOM_PROVINCIA').to_dict()['NO_prop']
     
@@ -166,236 +174,264 @@ for pregunta in preguntas:
         dic_NO_norm = dic_NO_norm.set_index('NOM_PROVINCIA').to_dict()['Normalizacion']
     
 
-# GRAFICO 1
+    # GRAFICO 1
 
-import geopandas as gpd
-import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize, LinearSegmentedColormap
-from matplotlib.colorbar import ColorbarBase
-import matplotlib.ticker as ticker
+    import geopandas as gpd
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import Normalize, LinearSegmentedColormap
+    from matplotlib.colorbar import ColorbarBase
+    import matplotlib.ticker as ticker
 
-# Load GeoJSON file
-gdf = gpd.read_file("Ecuador.geojson")
-gdf['name'] = gdf['name'].str.upper()
-gdf['name'] = gdf['name'].str.replace('SANTO DOMINGO DE LOS TSACHILAS', 'STO DGO TSACHILAS')
+    # Load GeoJSON file
+    gdf = gpd.read_file("Ecuador.geojson")
+    gdf['name'] = gdf['name'].str.upper()
+    gdf['name'] = gdf['name'].str.replace('SANTO DOMINGO DE LOS TSACHILAS', 'STO DGO TSACHILAS')
 
-color_si = '#0083E9'
-color_no = '#E99100'
+    color_si = '#0083E9'
+    color_no = '#E99100'
 
-# Plot the shapes with a heatmap-like effect based on the score
-fig, ax = plt.subplots(figsize=(10, 10))
-gdf.plot(ax=ax, color='white', edgecolor='black')
+    # Plot the shapes with a heatmap-like effect based on the score
+    fig, ax = plt.subplots(figsize=(10, 10))
+    gdf.plot(ax=ax, color='white', edgecolor='black')
 
-for name, score in prop_SI.items():
-    shape = gdf[gdf['name'] == name]
-    shape.plot(ax=ax, color=color_si, alpha=score, linewidth=0, label=name)
+    for name, score in prop_SI.items():
+        shape = gdf[gdf['name'] == name]
+        shape.plot(ax=ax, color=color_si, alpha=score, linewidth=0, label=name)
+        
+    for name, score in prop_NO.items():
+        shape = gdf[gdf['name'] == name]
+        shape.plot(ax=ax, color=color_no, alpha=score, linewidth=0, label=name)
+
+    # Create a colormap with a gradient using the specified color
+    cmap = LinearSegmentedColormap.from_list('custom_cmap', [(0, '#ffffff'), (1, color_si)])
+
+    # Crea un objeto Normalizar para mapear los valores al rango 0-1
+    norm = Normalize(vmin=0, vmax=1)
+
+    valores_a_convertir_si = prop_SI.values()
+    valores_a_convertir_no = prop_NO.values()
+
+    # Obtiene los colores correspondientes a los valores dados
+    colores_correspondientes_si = [cmap(norm(valor)) for valor in valores_a_convertir_si]
+
+
+
+    # Convierte los colores de formato RGB a formato hexadecimal
+    colores_hex_si = [plt.cm.colors.to_hex(color) for color in colores_correspondientes_si]
+
+
+    # Add colorbar
+    cbar_ax1 = fig.add_axes([0, 0.52, 0.03, 0.3])
+    norm = Normalize(vmin=0, vmax=1)
+    cbar = ColorbarBase(ax=cbar_ax1, cmap=cmap, norm=norm)
+    cbar.ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1, decimals=0))  # Set the labels to percentages from 1 to 100%
+
+    # Create a colormap with a gradient using the specified color
+    cmap = LinearSegmentedColormap.from_list('custom_cmap', [(0, '#ffffff'), (1, color_no)])
+    colores_correspondientes_no = [cmap(norm(valor)) for valor in valores_a_convertir_no]
+    colores_hex_no = [plt.cm.colors.to_hex(color) for color in colores_correspondientes_no]
+    # Add colorbar
+    cbar_ax2 = fig.add_axes([0, 0.18, 0.03, 0.3])
+    norm = Normalize(vmin=0, vmax=1)
+    cbar = ColorbarBase(ax=cbar_ax2, cmap=cmap, norm=norm)
+    cbar.ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1, decimals=0))  # Set the labels to percentages from 1 to 100%
+
+    plt.legend()
+    ax.axis('off')
+    # Save the plot as a PNG image
+    plt.savefig(f'mapas/{pregunta}_1.png', dpi=300, transparent=True)  # Adjust dpi as needed
+
+    data_SI = {
+        'NOM_PROVINCIA' : prop_SI.keys(),
+        'PROP' : prop_SI.values()
+    }
+    data_SI = pd.DataFrame(data_SI)
+    data_SI['Color Hex'] = colores_hex_si
+    data_SI['RESPUESTA'] = 'SI'
+
+    data_NO = {
+        'NOM_PROVINCIA' : prop_NO.keys(),
+        'PROP' : prop_NO.values()
+    }
+    data_NO = pd.DataFrame(data_NO)
+    data_NO['Color Hex'] = colores_hex_no
+    data_NO['RESPUESTA'] = 'NO'
+
+    data_1 = pd.concat([data_SI,data_NO])
+    data_1
+
+
+    #PLOT 2
+    import geopandas as gpd
+    import matplotlib.pyplot as plt
+    from matplotlib.colors import Normalize, LinearSegmentedColormap
+    from matplotlib.colorbar import ColorbarBase
+    import matplotlib.ticker as ticker
+
+    # Load GeoJSON file
+    gdf = gpd.read_file("Ecuador.geojson")
+    gdf['name'] = gdf['name'].str.upper()
+    gdf['name'] = gdf['name'].str.replace('SANTO DOMINGO DE LOS TSACHILAS', 'STO DGO TSACHILAS')
+
+    color_si = '#0083E9'
+    color_no = '#E99100'
+
+    # Plot the shapes with a heatmap-like effect based on the score
+    fig, ax = plt.subplots(figsize=(10, 10))
+    gdf.plot(ax=ax, color='white', edgecolor='black')
+
+    for name, score in dic_SI_norm.items():
+        shape = gdf[gdf['name'] == name]
+        shape.plot(ax=ax, color=color_si, alpha=score, linewidth=0, label=name)
+        
+    for name, score in dic_NO_norm.items():
+        shape = gdf[gdf['name'] == name]
+        shape.plot(ax=ax, color=color_no, alpha=score, linewidth=0, label=name)
+
+    # Create a colormap with a gradient using the specified color
+    cmap = LinearSegmentedColormap.from_list('custom_cmap', [(0, '#ffffff'), (1, color_si)])
+
+    # Crea un objeto Normalizar para mapear los valores al rango 0-1
+    norm = Normalize(vmin=0, vmax=5)
+
+    valores_a_convertir_si = dic_SI.values()
+    valores_a_convertir_no = dic_NO.values()
+
+    # Obtiene los colores correspondientes a los valores dados
+    colores_correspondientes_si = [cmap(norm(valor)) for valor in valores_a_convertir_si]
+
+
+
+    # Convierte los colores de formato RGB a formato hexadecimal
+    colores_hex_si = [plt.cm.colors.to_hex(color) for color in colores_correspondientes_si]
+
+
+    # Add colorbar
+    cbar_ax1 = fig.add_axes([0, 0.52, 0.03, 0.3])
+
+    cbar = ColorbarBase(ax=cbar_ax1, cmap=cmap, norm=norm)
+    #cbar.ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1, decimals=0))  # Set the labels to percentages from 1 to 100%
+
+    # Create a colormap with a gradient using the specified color
+    cmap = LinearSegmentedColormap.from_list('custom_cmap', [(0, '#ffffff'), (1, color_no)])
+    colores_correspondientes_no = [cmap(norm(valor)) for valor in valores_a_convertir_no]
+    colores_hex_no = [plt.cm.colors.to_hex(color) for color in colores_correspondientes_no]
+    # Add colorbar
+    cbar_ax2 = fig.add_axes([0, 0.18, 0.03, 0.3])
+
+    cbar = ColorbarBase(ax=cbar_ax2, cmap=cmap, norm=norm)
+    #cbar.ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1, decimals=0))  # Set the labels to percentages from 1 to 100%
+
+    plt.legend()
+    ax.axis('off')
+    # Save the plot as a PNG image
+    plt.savefig(f'mapas/{pregunta}_2.png', dpi=300, transparent=True)  # Adjust dpi as needed
+
+    data_SI = {
+        'NOM_PROVINCIA' : dic_SI.keys(),
+        'PROP' : dic_SI.values()
+    }
+    data_SI = pd.DataFrame(data_SI)
+    data_SI['Color Hex'] = colores_hex_si
+    data_SI['RESPUESTA'] = 'SI'
+
+    data_NO = {
+        'NOM_PROVINCIA' : dic_NO.keys(),
+        'PROP' : dic_NO.values()
+    }
+    data_NO = pd.DataFrame(data_NO)
+    data_NO['Color Hex'] = colores_hex_no
+    data_NO['RESPUESTA'] = 'NO'
+
+    data_2 = pd.concat([data_SI,data_NO])
+    data_2
+
+
+
+    pdf.set_background('background.jpeg')
+    pdf.add_page()
+
+    pdf.set_xy(15,15)
+    pdf.add_font('Anton-Regular', '', '../fonts/Anton-Regular.ttf', uni=True)  # Register the custom font
+    pdf.set_font('Helvetica','B',size=25)   # Helvetica, Times, Courier
+    pdf.cell(0,0,'Resultados Provinciales',0,1,'L')
     
-for name, score in prop_NO.items():
-    shape = gdf[gdf['name'] == name]
-    shape.plot(ax=ax, color=color_no, alpha=score, linewidth=0, label=name)
-
-# Create a colormap with a gradient using the specified color
-cmap = LinearSegmentedColormap.from_list('custom_cmap', [(0, '#ffffff'), (1, color_si)])
-
-# Crea un objeto Normalizar para mapear los valores al rango 0-1
-norm = Normalize(vmin=0, vmax=1)
-
-valores_a_convertir_si = prop_SI.values()
-valores_a_convertir_no = prop_NO.values()
-
-# Obtiene los colores correspondientes a los valores dados
-colores_correspondientes_si = [cmap(norm(valor)) for valor in valores_a_convertir_si]
+    if aux <= 5:
+        tipo = 'Referendum'
+    else:
+        tipo = 'Consulta Popular'
+    aux +=1
+    pdf.set_xy(15,15)
+    pdf.set_font('Helvetica', '', 20)  # Use the registered font
+    pdf.cell(0,0,tipo,0,1,'R')
 
 
 
-# Convierte los colores de formato RGB a formato hexadecimal
-colores_hex_si = [plt.cm.colors.to_hex(color) for color in colores_correspondientes_si]
+    image = pregunta
+    imagen = f'mapas/{image}_1.png'
+    pdf.image(f'{imagen}',x=30,y=30,w=125,h=125)
 
+    image = pregunta
+    imagen = f'mapas/{image}_2.png'
+    pdf.image(f'{imagen}',x=85,y=150,w=125,h=125)
 
-# Add colorbar
-cbar_ax1 = fig.add_axes([0, 0.52, 0.03, 0.3])
-norm = Normalize(vmin=0, vmax=1)
-cbar = ColorbarBase(ax=cbar_ax1, cmap=cmap, norm=norm)
-cbar.ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1, decimals=0))  # Set the labels to percentages from 1 to 100%
+    pdf.set_xy(15,26)
+    pdf.set_font('Helvetica', 'B', 18)  # Use the registered font
+    pdf.cell(0,0,'Pregunta:',0,1,'L')
 
-# Create a colormap with a gradient using the specified color
-cmap = LinearSegmentedColormap.from_list('custom_cmap', [(0, '#ffffff'), (1, color_no)])
-colores_correspondientes_no = [cmap(norm(valor)) for valor in valores_a_convertir_no]
-colores_hex_no = [plt.cm.colors.to_hex(color) for color in colores_correspondientes_no]
-# Add colorbar
-cbar_ax2 = fig.add_axes([0, 0.18, 0.03, 0.3])
-norm = Normalize(vmin=0, vmax=1)
-cbar = ColorbarBase(ax=cbar_ax2, cmap=cmap, norm=norm)
-cbar.ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1, decimals=0))  # Set the labels to percentages from 1 to 100%
+    pdf.set_xy(15,38)
+    pdf.set_font('Helvetica', size= 14)  # Use the registered font
+    pdf.cell(0,0,'Resultados de opcion ganadora por provincia considerando unicamente votos válidos',0,1,'L')
 
-plt.legend()
-ax.axis('off')
-# Save the plot as a PNG image
-plt.savefig('mapas/heatmap_plot.png', dpi=300, transparent=True)  # Adjust dpi as needed
+    pdf.set_xy(47,26)
+    pdf.set_font('Helvetica', '', 16)  # Use the registered font
+    pdf.cell(0,0,pregunta,0,1,'L')
+###########################################################
+    pdf.set_xy(10,63)
+    pdf.set_font('Helvetica', 'B', 7)  # Use the registered font
+    pdf.multi_cell(15,5,"Escala de intensidad por el SI",'L')
 
-data_SI = {
-    'NOM_PROVINCIA' : prop_SI.keys(),
-    'PROP' : prop_SI.values()
-}
-data_SI = pd.DataFrame(data_SI)
-data_SI['Color Hex'] = colores_hex_si
-data_SI['RESPUESTA'] = 'SI'
+    pdf.set_xy(10,103)
+    pdf.set_font('Helvetica', 'B', 7)  # Use the registered font
+    pdf.multi_cell(15,5,"Escala de intensidad por el NO",'L')
 
-data_NO = {
-    'NOM_PROVINCIA' : prop_NO.keys(),
-    'PROP' : prop_NO.values()
-}
-data_NO = pd.DataFrame(data_NO)
-data_NO['Color Hex'] = colores_hex_no
-data_NO['RESPUESTA'] = 'NO'
+    pdf.set_xy(65,183)
+    pdf.set_font('Helvetica', 'B', 7)  # Use the registered font
+    pdf.multi_cell(15,5,"Escala de intensidad por el SI",'L')
 
-data_1 = pd.concat([data_SI,data_NO])
-data_1
+    pdf.set_xy(65,223)
+    pdf.set_font('Helvetica', 'B', 7)  # Use the registered font
+    pdf.multi_cell(15,5,"Escala de intensidad por el NO",'L')
 
+    pdf.set_xy(15,148)
+    pdf.set_font('Helvetica', size= 14)  # Use the registered font
+    pdf.multi_cell(180,6,'Indice de Proporcionalidad entre el SI y el NO, utilizado para dimensionar la diferencia de votos entre ambas opciones por cada provincia. ','L')
 
-#PLOT 2
-import geopandas as gpd
-import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize, LinearSegmentedColormap
-from matplotlib.colorbar import ColorbarBase
-import matplotlib.ticker as ticker
+    df = df1.astype(str)
+    x = 145
+    y = 50
+    pdf.set_xy(x,y)
+    pdf.set_font("Helvetica", size=5)
+    table_data = [df.columns.tolist()] + df.values.tolist()
 
-# Load GeoJSON file
-gdf = gpd.read_file("Ecuador.geojson")
-gdf['name'] = gdf['name'].str.upper()
-gdf['name'] = gdf['name'].str.replace('SANTO DOMINGO DE LOS TSACHILAS', 'STO DGO TSACHILAS')
-
-color_si = '#0083E9'
-color_no = '#E99100'
-
-# Plot the shapes with a heatmap-like effect based on the score
-fig, ax = plt.subplots(figsize=(10, 10))
-gdf.plot(ax=ax, color='white', edgecolor='black')
-
-for name, score in dic_SI_norm.items():
-    shape = gdf[gdf['name'] == name]
-    shape.plot(ax=ax, color=color_si, alpha=score, linewidth=0, label=name)
-    
-for name, score in dic_NO_norm.items():
-    shape = gdf[gdf['name'] == name]
-    shape.plot(ax=ax, color=color_no, alpha=score, linewidth=0, label=name)
-
-# Create a colormap with a gradient using the specified color
-cmap = LinearSegmentedColormap.from_list('custom_cmap', [(0, '#ffffff'), (1, color_si)])
-
-# Crea un objeto Normalizar para mapear los valores al rango 0-1
-norm = Normalize(vmin=0, vmax=5)
-
-valores_a_convertir_si = dic_SI.values()
-valores_a_convertir_no = dic_NO.values()
-
-# Obtiene los colores correspondientes a los valores dados
-colores_correspondientes_si = [cmap(norm(valor)) for valor in valores_a_convertir_si]
-
-
-
-# Convierte los colores de formato RGB a formato hexadecimal
-colores_hex_si = [plt.cm.colors.to_hex(color) for color in colores_correspondientes_si]
-
-
-# Add colorbar
-cbar_ax1 = fig.add_axes([0, 0.52, 0.03, 0.3])
-
-cbar = ColorbarBase(ax=cbar_ax1, cmap=cmap, norm=norm)
-#cbar.ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1, decimals=0))  # Set the labels to percentages from 1 to 100%
-
-# Create a colormap with a gradient using the specified color
-cmap = LinearSegmentedColormap.from_list('custom_cmap', [(0, '#ffffff'), (1, color_no)])
-colores_correspondientes_no = [cmap(norm(valor)) for valor in valores_a_convertir_no]
-colores_hex_no = [plt.cm.colors.to_hex(color) for color in colores_correspondientes_no]
-# Add colorbar
-cbar_ax2 = fig.add_axes([0, 0.18, 0.03, 0.3])
-
-cbar = ColorbarBase(ax=cbar_ax2, cmap=cmap, norm=norm)
-#cbar.ax.yaxis.set_major_formatter(ticker.PercentFormatter(xmax=1, decimals=0))  # Set the labels to percentages from 1 to 100%
-
-plt.legend()
-ax.axis('off')
-# Save the plot as a PNG image
-plt.savefig('mapas/heatmap_plot.png', dpi=300, transparent=True)  # Adjust dpi as needed
-
-data_SI = {
-    'NOM_PROVINCIA' : dic_SI.keys(),
-    'PROP' : dic_SI.values()
-}
-data_SI = pd.DataFrame(data_SI)
-data_SI['Color Hex'] = colores_hex_si
-data_SI['RESPUESTA'] = 'SI'
-
-data_NO = {
-    'NOM_PROVINCIA' : dic_NO.keys(),
-    'PROP' : dic_NO.values()
-}
-data_NO = pd.DataFrame(data_NO)
-data_NO['Color Hex'] = colores_hex_no
-data_NO['RESPUESTA'] = 'NO'
-
-data_1 = pd.concat([data_SI,data_NO])
-
-
-
-pdf.set_background('background.jpeg')
-pdf.add_page()
-
-pdf.set_xy(15,15)
-pdf.add_font('Anton-Regular', '', '../fonts/Anton-Regular.ttf', uni=True)  # Register the custom font
-pdf.set_font('Helvetica','B',size=25)   # Helvetica, Times, Courier
-pdf.cell(0,0,'Resultados Provinciales',0,1,'L')
-
-pdf.set_xy(15,15)
-pdf.set_font('Helvetica', '', 20)  # Use the registered font
-pdf.cell(0,0,'Referéndum',0,1,'R')
-
-
-
-image = 'heatmap_plot'
-imagen = f'mapas/{image}.png'
-pdf.image(f'{imagen}',x=25,y=25,w=115,h=115)
-
-image = 'heatmap_plot'
-imagen = f'mapas/{image}.png'
-pdf.image(f'{imagen}',x=85,y=145,w=115,h=115)
-
-pdf.set_xy(15,26)
-pdf.set_font('Helvetica', 'B', 18)  # Use the registered font
-pdf.cell(0,0,'Pregunta:',0,1,'L')
-
-pdf.set_xy(47,26)
-pdf.set_font('Helvetica', '', 16)  # Use the registered font
-pdf.cell(0,0,pregunta,0,1,'L')
-
-
-
-df = df1.astype(str)
-x = 135
-y = 35
-pdf.set_xy(x,y)
-pdf.set_font("Helvetica", size=5)
-table_data = [df.columns.tolist()] + df.values.tolist()
-
-with pdf.table(width=50,col_widths=(25,10,10), align='L') as table:
-    for data_row in table_data:
-        row = table.row()
-        for datum in data_row:
-            row.cell(datum)
+    with pdf.table(width=50,col_widths=(25,10,10), align='L') as table:
+        for data_row in table_data:
+            row = table.row()
+            for datum in data_row:
+                row.cell(datum)
             
-df = df1.astype(str)
-x = 25
-y = 155
-pdf.set_xy(x,y)
-pdf.set_font("Helvetica", size=5)
-table_data = [df.columns.tolist()] + df.values.tolist()
+    df = df2.astype(str)
+    x = 15
+    y = 170
+    pdf.set_xy(x,y)
+    pdf.set_font("Helvetica", size=5)
+    table_data = [df.columns.tolist()] + df.values.tolist()
 
-with pdf.table(width=50,col_widths=(25,10,10), align='L') as table:
-    for data_row in table_data:
-        row = table.row()
-        for datum in data_row:
-            row.cell(datum)
+    with pdf.table(width=40,col_widths=(25,15), align='L') as table:
+        for data_row in table_data:
+            row = table.row()
+            for datum in data_row:
+                row.cell(datum)
 
 
 
